@@ -14,9 +14,9 @@ Avant de commencer, assurez-vous d'avoir installé les logiciels suivants :
 Clonez le dépôt GitHub pour obtenir le code source :
 
 lancez les commandes suivantes dans votre bash : 
-git clone https://github.com/Intracable78/web-services-movies
-cd movies
-docker-compose up --build
+- git clone https://github.com/Intracable78/web-services-movies
+- cd movies
+- docker-compose up --build
 
 ## Pour finir
 
