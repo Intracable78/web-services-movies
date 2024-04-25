@@ -18,7 +18,7 @@ const options = {
         info: {
             title: 'API de gestion de films',
             version: '1.0.0',
-            description: 'Une API simple pour gérer une collection de films',
+            description: 'Une API simple pour gérer une collection de films par catégories',
         },
         servers: [
             {

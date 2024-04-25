@@ -54,11 +54,24 @@ router.get('/', async (req, res) => {
             .limit(limit * 1)
             .skip((page - 1) * limit);
         const count = await Movie.countDocuments(query);
-        res.json({
-            movies,
+        const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+        const next = page * limit < count ? `${baseUrl}?page=${parseInt(page) + 1}&limit=${limit}` : null;
+        const prev = page > 1 ? `${baseUrl}?page=${parseInt(page) - 1}&limit=${limit}` : null;
+
+        const halResponse = {
+            _links: {
+                self: { href: `${baseUrl}?page=${page}&limit=${limit}` },
+                next: next ? { href: next } : undefined,
+                prev: prev ? { href: prev } : undefined,
+                allMovies: { href: `${baseUrl}` }
+            },
+            count: count,
             totalPages: Math.ceil(count / limit),
-            currentPage: page
-        });
+            currentPage: parseInt(page),
+            data: movies
+        };
+
+        res.json(halResponse);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -93,8 +106,20 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const movie = await Movie.findById(req.params.id);
-        if (!movie) return res.status(404).send('Movie not found');
-        res.json(movie);
+        if (!movie) {
+            return res.status(404).send('Movie not found');
+        }
+
+        const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}`;
+        const movieHAL = {
+            _links: {
+                self: { href: `${baseUrl}/${movie._id}` },
+                allMovies: { href: `${baseUrl}` }
+            },
+            data: movie
+        };
+
+        res.json(movieHAL);
     } catch (err) {
         res.status(500).json({ message: err.message });
     }
@@ -111,10 +136,42 @@ router.get('/:id', async (req, res) => {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Movie'
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - parutionDate
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Le nom du film
+ *                 example: 'Inception'
+ *               description:
+ *                 type: string
+ *                 description: La description du film
+ *                 example: 'Un voleur qui s’infiltre dans les rêves...'
+ *               parutionDate:
+ *                 type: string
+ *                 format: date
+ *                 description: La date de parution du film
+ *                 example: '2010-07-16'
+ *               note:
+ *                 type: integer
+ *                 description: La note du film, de 0 à 5
+ *                 example: 5
+ *               categories:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 description: IDs des catégories associées au film
+ *                 example: ['5f8d0d55b54764421b7156fc']
  *     responses:
  *       201:
  *         description: Le film a été créé avec succès
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Movie'
  *       400:
  *         description: Requête invalide
  */
@@ -131,7 +188,16 @@ router.post('/', async (req, res) => {
 
     try {
         const newMovie = await movie.save();
-        res.status(201).json(newMovie);
+
+        const movieHAL = {
+            _links: {
+                self: { href: `/movies/${newMovie._id}` },
+                allMovies: { href: '/movies' }
+            },
+            data: newMovie
+        };
+
+        res.status(201).json(movieHAL);
     } catch (err) {
         res.status(400).json({ message: err.message });
     }
